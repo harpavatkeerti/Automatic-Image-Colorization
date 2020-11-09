@@ -63,10 +63,10 @@ def main():
         else:
             print('Checkpoint filepath incorrect.')
             return
-    elif args.pretrained:
-        print(args.pretrained)
-        if os.path.isfile(args.pretrained):
-            model.load_state_dict(torch.load(args.pretrained))
+    elif args.evaluate:
+        # print('/content/drive/My Drive/checkpoints/model_best.pth.tar')
+        if os.path.isfile('/content/drive/My Drive/checkpoints/best_model.pth'):
+            model.load_state_dict(torch.load('/content/drive/My Drive/checkpoints/best_model.pth'))
             print('Loaded pretrained model.')
         else:
             print('Pretrained model filepath incorrect.')
@@ -119,13 +119,16 @@ def main():
         # Save checkpoint, and replace the old best model if the current model is better
         is_best_so_far = losses < best_losses
         best_losses = max(losses, best_losses)
-        save_checkpoint({
-            'epoch': epoch + 1,
-            'best_losses': best_losses,
-            'state_dict': model.state_dict(),
-            'optimizer': optimizer.state_dict(),
-        }, is_best_so_far, 'checkpoints/checkpoint-epoch-{}.pth.tar'.format(epoch))
-        
+        # save_checkpoint({
+        #     'epoch': epoch + 1,
+        #     'best_losses': best_losses,
+        #     'state_dict': model.state_dict(),
+        #     'optimizer': optimizer.state_dict(),
+        # }, is_best_so_far, 'checkpoints/checkpoint-epoch-{}.pth.tar'.format(epoch))
+        if is_best_so_far:
+          torch.save(model.state_dict(), '/content/drive/My Drive/checkpoints/best_model.pth')
+        torch.save(model.state_dict(), '/content/drive/My Drive/checkpoints/checkpoint-epoch' + str(epoch) + '.pth')
+
     return best_losses
 
 def train(train_loader, model, criterion, optimizer, epoch):
@@ -157,7 +160,7 @@ def train(train_loader, model, criterion, optimizer, epoch):
         loss = criterion(output_ab, input_ab_variable) # MSE
         
         # Record loss and measure accuracy
-        losses.update(loss.data[0], input_gray.size(0))
+        losses.update(loss.data.item(), input_gray.size(0))
         
         # Compute gradient and optimize
         optimizer.zero_grad()
@@ -209,12 +212,12 @@ def validate(val_loader, model, criterion, save_images, epoch):
         loss = criterion(output_ab, input_ab_variable) # check this!
         
         # Record loss and measure accuracy
-        losses.update(loss.data[0], input_gray.size(0))
+        losses.update(loss.data.item(), input_gray.size(0))
 
         # Save images to file
         if save_images:
             for j in range(len(output_ab)):
-                save_path = {'grayscale': 'outputs/gray/', 'colorized': 'outputs/color/'}
+                save_path = {'grayscale': '/content/drive/My Drive/outputs/gray/', 'colorized': '/content/drive/My Drive/outputs/color/'}
                 save_name = 'img-{}-epoch-{}.jpg'.format(i * val_loader.batch_size + j, epoch)
                 visualize_image(input_gray[j], ab_input=output_ab[j].data, show_image=False, save_path=save_path, save_name=save_name)
 
